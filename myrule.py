@@ -6,41 +6,43 @@ from typing import List
 from artifactory_cleanup import register
 from artifactory_cleanup.rules import Rule, ArtifactsList
 
-def checkKey(x):
+def sortByUsage(x):
     try:
         return x["stats"]["downloaded"]
-    except KeyError:
+    except:
         return x["created"]
 
-class MySimpleRule(Rule):
-    """For more methods look at Rule source code"""
+class RemoveLeastRecentUsedFiles(Rule):
+    """
+    Remove the least recently used files until the total size is kept at most passed value.
+    Creation is interpreted as a first usage
+    """
 
-    def __init__(self, maxSize):
-        self.maxSize = maxSize
+    def __init__(self, keepAtMostBytes):
+        self.keepAtMostBytes = keepAtMostBytes
 
     def aql_add_filter(self, filters: List) -> List:
-        print(self.maxSize)
         return filters
 
     def filter(self, artifacts: ArtifactsList) -> ArtifactsList:
-        """I'm here just to print the list"""
         totalSize = 0
-        for i in artifacts:
-            totalSize += i["size"]
+        for artifact in artifacts:
+            totalSize += artifact["size"]
 
-        artifacts.sort(key=lambda x: checkKey(x))
+        artifacts.sort(key=lambda x: sortByUsage(x))
 
         artifactsForDel = ArtifactsList()
-        localSize = 0
-        sizeForDel = totalSize - self.maxSize
+        removedSize = 0
+        maxSizeToRemove = totalSize - self.keepAtMostBytes
         for artifact in artifacts:
-            if localSize < sizeForDel:
-                localSize += artifact["size"]
-                artifactsForDel.append(artifact)
-            else:
+            if removedSize >= maxSizeToRemove:
                 break
+
+            removedSize += artifact["size"]
+            artifactsForDel.append(artifact)
+
         return artifactsForDel
 
 
 # Register your rule in the system
-register(MySimpleRule)
+register(RemoveLeastRecentUsedFiles)

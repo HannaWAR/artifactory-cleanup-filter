@@ -7,12 +7,12 @@ artifactory-cleanup:
   policies:
     - name: Use your own rules!
       rules:
-        # - rule: Repo
-        #   name: "example-repo-local"
-        # - rule: MySimpleRule
-        #   maxSize: 30000000
+        - rule: Repo
+          name: "example-repo-local"
+        - rule: RemoveLeastRecentUsedFiles
+          keepAtMostBytes: 30000000
 
         - rule: Repo
           name: "CammetaCpp_SCCache"
-        - rule: MySimpleRule
-          maxSize: 3000000000
+        - rule: RemoveLeastRecentUsedFiles
+          keepAtMostBytes: 3000000000

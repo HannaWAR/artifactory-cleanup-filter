@@ -25,23 +25,19 @@ class RemoveLeastRecentUsedFiles(Rule):
         return filters
 
     def filter(self, artifacts: ArtifactsList) -> ArtifactsList:
-        totalSize = 0
-        for artifact in artifacts:
-            totalSize += artifact["size"]
+        # List will contain fresh files at the beginning
+        artifacts.sort(key=lambda x: sortByUsage(x), reverse=True)
 
-        artifacts.sort(key=lambda x: sortByUsage(x))
-
-        artifactsForDel = ArtifactsList()
-        removedSize = 0
-        maxSizeToRemove = totalSize - self.keepAtMostBytes
+        keptSize = 0
         for artifact in artifacts:
-            if removedSize >= maxSizeToRemove:
+            keptSize += artifact["size"]
+            if keptSize > self.keepAtMostBytes:
+                # No need to keep files if overflow occurs
                 break
 
-            removedSize += artifact["size"]
-            artifactsForDel.append(artifact)
+            artifacts.keep(artifact)
 
-        return artifactsForDel
+        return artifacts
 
 
 # Register your rule in the system
